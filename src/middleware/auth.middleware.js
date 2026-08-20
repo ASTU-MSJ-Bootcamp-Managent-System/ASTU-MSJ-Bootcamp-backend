@@ -1,56 +1,48 @@
-// src/middleware/auth.middleware.js
-const jwt = require("jsonwebtoken");
-const User = require("../models/user.model");
+const jwt = require('jsonwebtoken');
+const env = require('../config/env');
 
 const protect = async (req, res, next) => {
   try {
     let token;
-    if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer")
-    ) {
-      token = req.headers.authorization.split(" ")[1];
+
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      token = req.headers.authorization.split(' ')[1];
     }
 
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: "Not authorized, token missing",
+        message: 'Not authorized, token missing',
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret");
-    req.user = await User.findById(decoded.id).select("-password");
+    const secret = env.jwtSecret || process.env.JWT_SECRET || 'fallback_secret_key';
+    const decoded = jwt.verify(token, secret);
 
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: "User no longer exists",
-      });
-    }
-
+    req.user = decoded;
     next();
   } catch (error) {
     return res.status(401).json({
       success: false,
-      message: "Not authorized, token failed",
+      message: 'Not authorized, invalid token',
     });
   }
 };
 
-// Higher-order function returning the middleware
+// 1. Function definition (MUST BE HERE BEFORE EXPORTING)
 const restrictTo = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
+    if (!req.user || !roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        message: "Forbidden: You do not have permission to perform this action",
+        message: 'You do not have permission to perform this action',
       });
     }
     next();
   };
 };
 
+// 2. Export both functions
 module.exports = {
   protect,
   restrictTo,

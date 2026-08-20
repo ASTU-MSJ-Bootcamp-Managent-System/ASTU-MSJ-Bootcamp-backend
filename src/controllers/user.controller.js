@@ -1,6 +1,19 @@
 const userService = require('../services/user.service');
 const { sendSuccess } = require('../utils/response');
 
+const login = async (req, res, next) => {
+  try {
+    console.log("Login Request Body:", req.body);
+    const result = await userService.loginUser(req.body);
+    return sendSuccess(res, 'Login successful', result, 200);
+  } catch (error) {
+    console.error("=== LOGIN ERROR LOG START ===");
+    console.error(error);
+    console.error("=== LOGIN ERROR LOG END ===");
+    next(error);
+  }
+};
+
 const getUsers = async (req, res, next) => {
   try {
     const result = await userService.getAllUsers(req.query);
@@ -32,4 +45,5 @@ module.exports = {
   getUsers,
   createUser,
   updateUserRole,
+  login,
 };

@@ -1,10 +1,10 @@
 const validateAttendance = (req, res, next) => {
-  const { student, batch, date, status, markedBy } = req.body;
+  const { student, batch, date, status } = req.body;
 
-  if (!student || !batch || !date || !status || !markedBy) {
+  if (!student || !batch || !date || !status) {
     return res.status(400).json({
       success: false,
-      message: "student, batch, date, status and markedBy are required",
+      message: "student, batch, date, and status are required fields",
     });
   }
 
@@ -13,7 +13,7 @@ const validateAttendance = (req, res, next) => {
   if (!allowedStatuses.includes(status)) {
     return res.status(400).json({
       success: false,
-      message: "Invalid attendance status",
+      message: `Invalid attendance status. Allowed values: ${allowedStatuses.join(", ")}`,
     });
   }
 

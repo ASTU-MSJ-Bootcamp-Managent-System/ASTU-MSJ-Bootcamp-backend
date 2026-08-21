@@ -1,49 +1,27 @@
-const jwt = require('jsonwebtoken');
-const env = require('../config/env');
+const { verifyToken } = require('../utils/jwt');
 
-const protect = async (req, res, next) => {
+const authenticate = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      success: false,
+      message: 'Access denied. No token provided.'
+    });
+  }
+
+  const token = authHeader.split(' ')[1];
+
   try {
-    let token;
-
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-      token = req.headers.authorization.split(' ')[1];
-    }
-
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: 'Not authorized, token missing',
-      });
-    }
-
-    const secret = env.jwtSecret || process.env.JWT_SECRET || 'fallback_secret_key';
-    const decoded = jwt.verify(token, secret);
-
+    const decoded = verifyToken(token);
     req.user = decoded;
     next();
   } catch (error) {
     return res.status(401).json({
       success: false,
-      message: 'Not authorized, invalid token',
+      message: 'Invalid or expired token'
     });
   }
 };
 
-// 1. Function definition (MUST BE HERE BEFORE EXPORTING)
-const restrictTo = (...roles) => {
-  return (req, res, next) => {
-    if (!req.user || !roles.includes(req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not have permission to perform this action',
-      });
-    }
-    next();
-  };
-};
-
-// 2. Export both functions
-module.exports = {
-  protect,
-  restrictTo,
-};
+module.exports = authenticate;

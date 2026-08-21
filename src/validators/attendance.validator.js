@@ -1,23 +1,29 @@
-const validateAttendance = (req, res, next) => {
-  const { student, batch, date, status } = req.body;
+const { body, param } = require('express-validator');
 
-  if (!student || !batch || !date || !status) {
-    return res.status(400).json({
-      success: false,
-      message: "student, batch, date, and status are required fields",
-    });
-  }
+const createAttendanceValidator = [
+  body('student').isMongoId().withMessage('Invalid student ID'),
+  body('batch').isMongoId().withMessage('Invalid batch ID'),
+  body('date').isISO8601().withMessage('Valid date is required'),
+  body('status')
+    .isIn(['PRESENT', 'ABSENT', 'LATE', 'EXCUSED'])
+    .withMessage('Status must be PRESENT, ABSENT, LATE, or EXCUSED'),
+];
 
-  const allowedStatuses = ["PRESENT", "ABSENT", "LATE", "EXCUSED"];
+const updateAttendanceValidator = [
+  param('id').isMongoId().withMessage('Invalid attendance ID'),
+  body('status')
+    .optional()
+    .isIn(['PRESENT', 'ABSENT', 'LATE', 'EXCUSED'])
+    .withMessage('Status must be PRESENT, ABSENT, LATE, or EXCUSED'),
+  body('note').optional().trim(),
+];
 
-  if (!allowedStatuses.includes(status)) {
-    return res.status(400).json({
-      success: false,
-      message: `Invalid attendance status. Allowed values: ${allowedStatuses.join(", ")}`,
-    });
-  }
+const attendanceQueryValidator = [
+  param('batchId').isMongoId().withMessage('Invalid batch ID'),
+];
 
-  next();
+module.exports = {
+  createAttendanceValidator,
+  updateAttendanceValidator,
+  attendanceQueryValidator,
 };
-
-module.exports = validateAttendance;

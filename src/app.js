@@ -4,6 +4,10 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const errorHandler = require('./middleware/error.middleware');
 
+// Swagger
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./docs/swagger');
+
 // Route imports
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
@@ -39,6 +43,9 @@ app.use(express.json({ limit: '10mb' }));
 app.get('/health', (req, res) => {
   res.status(200).json({ success: true, message: 'Server is healthy' });
 });
+
+// Swagger API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // API Routes
 app.use('/api/auth', authRoutes);

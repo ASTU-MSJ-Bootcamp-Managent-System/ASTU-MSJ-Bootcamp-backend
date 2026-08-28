@@ -17,9 +17,17 @@ const createProgress = async (progressData, mentorId) => {
     throw error;
   }
 
-  // Verify mentor is assigned to this student
-  if (!student.assignedMentor || student.assignedMentor.toString() !== mentorId.toString()) {
-    const error = new Error('Forbidden: You can only track progress for your assigned students');
+  // Verify mentor has access: either assigned directly OR is attached to the student's batch
+  const hasDirectAssignment = student.assignedMentor && student.assignedMentor.toString() === mentorId.toString();
+  let hasBatchAccess = false;
+  if (!hasDirectAssignment && student.batch) {
+    const batch = await Batch.findById(student.batch);
+    if (batch && batch.mentors.some((id) => id.toString() === mentorId.toString())) {
+      hasBatchAccess = true;
+    }
+  }
+  if (!hasDirectAssignment && !hasBatchAccess) {
+    const error = new Error('Forbidden: You can only track progress for students in your batch');
     error.statusCode = 403;
     throw error;
   }

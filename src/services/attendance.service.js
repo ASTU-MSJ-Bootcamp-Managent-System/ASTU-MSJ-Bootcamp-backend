@@ -18,8 +18,17 @@ const createAttendance = async (attendanceData, mentorId) => {
     throw error;
   }
 
-  if (!student.assignedMentor || student.assignedMentor.toString() !== mentorId.toString()) {
-    const error = new Error('Forbidden: You can only record attendance for your assigned students');
+  // Verify mentor has access: either assigned directly OR is attached to the student's batch
+  const hasDirectAssignment = student.assignedMentor && student.assignedMentor.toString() === mentorId.toString();
+  let hasBatchAccess = false;
+  if (!hasDirectAssignment && student.batch) {
+    const batch = await Batch.findById(student.batch);
+    if (batch && batch.mentors.some((id) => id.toString() === mentorId.toString())) {
+      hasBatchAccess = true;
+    }
+  }
+  if (!hasDirectAssignment && !hasBatchAccess) {
+    const error = new Error('Forbidden: You can only record attendance for students in your batch');
     error.statusCode = 403;
     throw error;
   }

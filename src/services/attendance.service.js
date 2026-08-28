@@ -4,10 +4,16 @@ const Batch = require('../models/batch.model');
 const { parsePagination, buildPagination } = require('../utils/pagination');
 
 const createAttendance = async (attendanceData, mentorId) => {
+  if (!attendanceData.student) {
+    const error = new Error('Student ID is required');
+    error.statusCode = 400;
+    throw error;
+  }
+
   const student = await User.findById(attendanceData.student);
 
   if (!student || student.role !== 'STUDENT') {
-    const error = new Error('Invalid student ID');
+    const error = new Error(`Student not found with ID: ${attendanceData.student}`);
     error.statusCode = 404;
     throw error;
   }

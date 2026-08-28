@@ -5,7 +5,10 @@
  *     tags:
  *       - Authentication
  *     summary: Register a student
- *     description: Public registration. Self-registration only allows the STUDENT role.
+ *     description: |
+ *       Public registration. Self-registration only allows the STUDENT role.
+ *       Newly registered students require admin approval before they can log in.
+ *       The account is created with `isApproved: false` by default.
  *     requestBody:
  *       required: true
  *       content:
@@ -46,7 +49,10 @@
  *     tags:
  *       - Authentication
  *     summary: Login
- *     description: Login as a student, mentor, or administrator.
+ *     description: |
+ *       Login as a student, mentor, or administrator.
+ *       Unapproved student accounts will be rejected with 403 Forbidden.
+ *       Students must be approved by an admin before they can log in.
  *     requestBody:
  *       required: true
  *       content:
@@ -70,6 +76,8 @@
  *         description: Login successful
  *       401:
  *         description: Invalid credentials
+ *       403:
+ *         description: Account awaiting admin approval
  */
 
 /**
@@ -185,6 +193,65 @@
 /* ============================================================
    USERS
    ============================================================ */
+
+/**
+ * @swagger
+ * /api/users/{id}/approve:
+ *   patch:
+ *     tags:
+ *       - Users
+ *     summary: Approve a student account
+ *     description: |
+ *       Admin only. Approves a pending student account so they can log in.
+ *       Only STUDENT accounts can be approved. The account must not already be approved.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The MongoDB ObjectId of the student to approve
+ *         example: 65f1a2b3c4d5e6f7a8b9c0d1
+ *     responses:
+ *       200:
+ *         description: Student approved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Student approved successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *                       example: STUDENT
+ *                     isApproved:
+ *                       type: boolean
+ *                       example: true
+ *       400:
+ *         description: Invalid user ID or not a student / already approved
+ *       401:
+ *         description: Unauthorized - no token or invalid token
+ *       403:
+ *         description: Forbidden - admin role required
+ *       404:
+ *         description: User not found
+ */
 
 /**
  * @swagger

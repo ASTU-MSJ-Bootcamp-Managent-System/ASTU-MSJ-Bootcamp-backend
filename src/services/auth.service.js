@@ -36,6 +36,13 @@ class AuthService {
       throw error;
     }
 
+    // Check approval status for students
+    if (user.role === 'STUDENT' && !user.isApproved) {
+      const error = new Error('Your account is awaiting admin approval.');
+      error.statusCode = 403;
+      throw error;
+    }
+
     const isMatch = await comparePassword(password, user.password);
     if (!isMatch) {
       const error = new Error('Invalid credentials');

@@ -55,6 +55,15 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
+const approveUser = async (req, res, next) => {
+  try {
+    const user = await userService.approveUser(req.params.id);
+    return sendResponse(res, 200, 'Student approved successfully', user);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getUsers,
   getUserById,
@@ -62,4 +71,5 @@ module.exports = {
   updateProfile,
   updateUserRole,
   deleteUser,
+  approveUser,
 };

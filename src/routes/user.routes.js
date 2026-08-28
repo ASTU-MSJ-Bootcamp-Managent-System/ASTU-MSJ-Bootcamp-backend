@@ -26,6 +26,9 @@ router.get('/:id', authorize('ADMIN'), userIdParamValidator, validate, userContr
 // PATCH /api/users/profile - Update own profile
 router.patch('/profile', updateProfileValidator, validate, userController.updateProfile);
 
+// PATCH /api/users/:id/approve - Approve student (ADMIN only)
+router.patch('/:id/approve', authorize('ADMIN'), userIdParamValidator, validate, userController.approveUser);
+
 // PATCH /api/users/:id/role - Update user role (ADMIN only)
 router.patch('/:id/role', authorize('ADMIN'), userIdParamValidator, updateRoleValidator, validate, userController.updateUserRole);
 

@@ -122,10 +122,44 @@ const deleteUser = async (userId, adminId) => {
   return { message: 'User deleted successfully' };
 };
 
+const approveUser = async (userId) => {
+  const user = await User.findById(userId);
+
+  if (!user) {
+    const error = new Error('User not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (user.role !== 'STUDENT') {
+    const error = new Error('Only student accounts can be approved');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (user.isApproved) {
+    const error = new Error('Student is already approved');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  user.isApproved = true;
+  await user.save();
+
+  return {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    isApproved: user.isApproved,
+  };
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
   updateProfile,
   updateUserRole,
   deleteUser,
+  approveUser,
 };

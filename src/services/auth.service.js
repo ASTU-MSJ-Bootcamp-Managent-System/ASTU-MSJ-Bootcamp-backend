@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const User = require('../models/user.model');
 const { comparePassword } = require('../utils/password');
 const { generateToken } = require('../utils/jwt');
+const { sendResetEmail } = require('./email.service');
 
 class AuthService {
   async register({ name, email, password }) {
@@ -97,8 +98,17 @@ class AuthService {
     user.resetPasswordExpires = Date.now() + 10 * 60 * 1000; // 10 mins
     await user.save();
 
-    // Dev mode notice: log the plain reset token to console
-    console.log(`[DEV ONLY] Password reset token for ${email}: ${resetToken}`);
+    // Build the reset URL — frontend will read ?token= from the URL
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+
+    // Send email (non-blocking — don't fail the request if email fails)
+    sendResetEmail(email, resetUrl, user.name).catch((err) => {
+      console.error('[Email] Failed to send reset email:', err.message);
+    });
+
+    console.log(`[DEV] Password reset token for ${email}: ${resetToken}`);
+    console.log(`[DEV] Reset URL: ${resetUrl}`);
   }
 
   async confirmPasswordReset({ token, newPassword }) {

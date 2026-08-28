@@ -1,6 +1,7 @@
 const Submission = require('../models/submission.model');
 const Assignment = require('../models/assignment.model');
 const User = require('../models/user.model');
+const Batch = require('../models/batch.model');
 const { parsePagination, buildPagination } = require('../utils/pagination');
 
 const createSubmission = async (submissionData, studentId) => {
@@ -41,10 +42,18 @@ const gradeSubmission = async (submissionId, gradeData, mentorId) => {
     throw error;
   }
 
-  // Verify mentor is assigned to the student
+  // Verify mentor has access: either assigned directly OR is attached to the student's batch
   const student = await User.findById(submission.student);
-  if (!student.assignedMentor || student.assignedMentor.toString() !== mentorId.toString()) {
-    const error = new Error('Forbidden: You can only grade submissions from your assigned students');
+  const hasDirectAssignment = student.assignedMentor && student.assignedMentor.toString() === mentorId.toString();
+  let hasBatchAccess = false;
+  if (!hasDirectAssignment && student.batch) {
+    const batch = await Batch.findById(student.batch);
+    if (batch && batch.mentors.some((id) => id.toString() === mentorId.toString())) {
+      hasBatchAccess = true;
+    }
+  }
+  if (!hasDirectAssignment && !hasBatchAccess) {
+    const error = new Error('Forbidden: You can only grade submissions from students in your batch');
     error.statusCode = 403;
     throw error;
   }
@@ -108,10 +117,18 @@ const requestResubmission = async (submissionId, mentorId) => {
     throw error;
   }
 
-  // Verify mentor is assigned to the student
+  // Verify mentor has access: either assigned directly OR is attached to the student's batch
   const student = await User.findById(submission.student);
-  if (!student.assignedMentor || student.assignedMentor.toString() !== mentorId.toString()) {
-    const error = new Error('Forbidden: You can only request resubmission from your assigned students');
+  const hasDirectAssignment = student.assignedMentor && student.assignedMentor.toString() === mentorId.toString();
+  let hasBatchAccess = false;
+  if (!hasDirectAssignment && student.batch) {
+    const batch = await Batch.findById(student.batch);
+    if (batch && batch.mentors.some((id) => id.toString() === mentorId.toString())) {
+      hasBatchAccess = true;
+    }
+  }
+  if (!hasDirectAssignment && !hasBatchAccess) {
+    const error = new Error('Forbidden: You can only request resubmission from students in your batch');
     error.statusCode = 403;
     throw error;
   }

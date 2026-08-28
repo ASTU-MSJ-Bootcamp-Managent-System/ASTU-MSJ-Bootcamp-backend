@@ -4,16 +4,31 @@ const Batch = require('../models/batch.model');
 const { parsePagination, buildPagination } = require('../utils/pagination');
 
 const createAttendance = async (attendanceData, mentorId) => {
+  if (!attendanceData.student) {
+    const error = new Error('Student ID is required');
+    error.statusCode = 400;
+    throw error;
+  }
+
   const student = await User.findById(attendanceData.student);
 
   if (!student || student.role !== 'STUDENT') {
-    const error = new Error('Invalid student ID');
+    const error = new Error(`Student not found with ID: ${attendanceData.student}`);
     error.statusCode = 404;
     throw error;
   }
 
-  if (!student.assignedMentor || student.assignedMentor.toString() !== mentorId.toString()) {
-    const error = new Error('Forbidden: You can only record attendance for your assigned students');
+  // Verify mentor has access: either assigned directly OR is attached to the student's batch
+  const hasDirectAssignment = student.assignedMentor && student.assignedMentor.toString() === mentorId.toString();
+  let hasBatchAccess = false;
+  if (!hasDirectAssignment && student.batch) {
+    const batch = await Batch.findById(student.batch);
+    if (batch && batch.mentors.some((id) => id.toString() === mentorId.toString())) {
+      hasBatchAccess = true;
+    }
+  }
+  if (!hasDirectAssignment && !hasBatchAccess) {
+    const error = new Error('Forbidden: You can only record attendance for students in your batch');
     error.statusCode = 403;
     throw error;
   }

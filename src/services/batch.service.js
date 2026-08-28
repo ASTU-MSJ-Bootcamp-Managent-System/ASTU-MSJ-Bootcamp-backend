@@ -89,7 +89,7 @@ const attachMentor = async (batchId, mentorId) => {
     throw error;
   }
 
-  if (batch.mentors.includes(mentorId)) {
+  if (batch.mentors.some((id) => id.toString() === mentorId.toString())) {
     const error = new Error('Mentor already attached to this batch');
     error.statusCode = 409;
     throw error;
@@ -108,7 +108,7 @@ const detachMentor = async (batchId, mentorId) => {
     throw error;
   }
 
-  if (!batch.mentors.includes(mentorId)) {
+  if (!batch.mentors.some((id) => id.toString() === mentorId.toString())) {
     const error = new Error('Mentor is not attached to this batch');
     error.statusCode = 400;
     throw error;
@@ -134,7 +134,7 @@ const enrollStudent = async (batchId, studentId) => {
     throw error;
   }
 
-  if (batch.students.includes(studentId)) {
+  if (batch.students.some((id) => id.toString() === studentId.toString())) {
     const error = new Error('Student already enrolled in this batch');
     error.statusCode = 409;
     throw error;
@@ -157,7 +157,7 @@ const removeStudent = async (batchId, studentId) => {
     throw error;
   }
 
-  if (!batch.students.includes(studentId)) {
+  if (!batch.students.some((id) => id.toString() === studentId.toString())) {
     const error = new Error('Student is not enrolled in this batch');
     error.statusCode = 400;
     throw error;
@@ -184,16 +184,22 @@ const assignStudentMentor = async (batchId, studentId, mentorId) => {
     throw error;
   }
 
-  if (!batch.students.includes(studentId)) {
+  if (!batch.students.some((id) => id.toString() === studentId.toString())) {
     const error = new Error('Student is not enrolled in this batch');
     error.statusCode = 400;
     throw error;
   }
 
-  if (!batch.mentors.includes(mentorId)) {
-    const error = new Error('Mentor is not attached to this batch');
-    error.statusCode = 400;
-    throw error;
+  /* Auto-attach mentor to batch if not already there */
+  if (!batch.mentors.some((id) => id.toString() === mentorId.toString())) {
+    const mentor = await User.findById(mentorId);
+    if (!mentor || mentor.role !== 'MENTOR') {
+      const error = new Error('Target user is not a valid Mentor');
+      error.statusCode = 400;
+      throw error;
+    }
+    batch.mentors.push(mentorId);
+    await batch.save();
   }
 
   const student = await User.findById(studentId);

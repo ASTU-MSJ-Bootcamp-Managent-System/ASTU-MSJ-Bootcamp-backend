@@ -4,16 +4,30 @@ const Batch = require('../models/batch.model');
 const { parsePagination, buildPagination } = require('../utils/pagination');
 
 const createProgress = async (progressData, mentorId) => {
+  if (!progressData.student) {
+    const error = new Error('Student ID is required');
+    error.statusCode = 400;
+    throw error;
+  }
+
   const student = await User.findById(progressData.student);
   if (!student || student.role !== 'STUDENT') {
-    const error = new Error('Invalid student ID');
+    const error = new Error(`Student not found with ID: ${progressData.student}`);
     error.statusCode = 404;
     throw error;
   }
 
-  // Verify mentor is assigned to this student
-  if (!student.assignedMentor || student.assignedMentor.toString() !== mentorId.toString()) {
-    const error = new Error('Forbidden: You can only track progress for your assigned students');
+  // Verify mentor has access: either assigned directly OR is attached to the student's batch
+  const hasDirectAssignment = student.assignedMentor && student.assignedMentor.toString() === mentorId.toString();
+  let hasBatchAccess = false;
+  if (!hasDirectAssignment && student.batch) {
+    const batch = await Batch.findById(student.batch);
+    if (batch && batch.mentors.some((id) => id.toString() === mentorId.toString())) {
+      hasBatchAccess = true;
+    }
+  }
+  if (!hasDirectAssignment && !hasBatchAccess) {
+    const error = new Error('Forbidden: You can only track progress for students in your batch');
     error.statusCode = 403;
     throw error;
   }

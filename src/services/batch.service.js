@@ -25,7 +25,11 @@ const getAllBatches = async (query) => {
   const total = await Batch.countDocuments(filter);
   const batches = await Batch.find(filter)
     .populate('mentors', 'name email')
-    .populate('students', 'name email')
+    .populate({
+      path: 'students',
+      select: 'name email assignedMentor',
+      populate: { path: 'assignedMentor', select: 'name email' },
+    })
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);

@@ -44,6 +44,13 @@ const updateProfile = async (userId, updateData) => {
   delete updateData.role;
   delete updateData.password;
 
+  // For STUDENT and MENTOR, name and email are immutable
+  const currentUser = await User.findById(userId).select('role');
+  if (currentUser && (currentUser.role === 'STUDENT' || currentUser.role === 'MENTOR')) {
+    delete updateData.name;
+    delete updateData.email;
+  }
+
   const user = await User.findByIdAndUpdate(userId, updateData, {
     new: true,
     runValidators: true,
